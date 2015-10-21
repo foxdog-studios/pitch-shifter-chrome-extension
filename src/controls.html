@@ -4,31 +4,52 @@
     <script src="controls.js"></script>
   </head>
   <body>
-    <div>
-      <label>
+    <div class="heading">
+      <h1>Pitch shifter</h1>
+      <div class="slideThree">
         <input id="enabled" type="checkbox">
-        Enabled
-      </label>
+        <label for="enabled">
+        </label>
+      </div>
     </div>
-    <div>
+    <div class="clearfix"></div>
+    <div class="control">
       <label>
         Pitch
-        <span id="pitch-value">0</span>
+        <span class="value" id="pitch-value">0</span>
         <button id="pitch-reset" class="reset">
           reset
         </button>
         <input id="pitch" type="range" min="-1" max="1" step="0.01" value="0">
       </label>
+      <p>
+        <span class="left">
+          Low
+        </span>
+        <span class="right">
+          High
+        </span>
+      </p>
     </div>
-    <div>
+    <div class="clearfix"></div>
+    <div class="control">
       <label>
-        Speed
-        <span id="playback-rate-value">1</span>
+        Playback Rate
+        <span class="value" id="playback-rate-value">1</span>
         <button id="playback-rate-reset" class="reset">
           reset
         </button>
         <input id="playback-rate" type="range" min="0.5" max="3" step="0.01" value="1">
       </label>
+      <p>
+        <span class="left">
+          Slow
+        </span>
+        <span class="right">
+          Fast
+        </span>
+      </p>
     </div>
+    <div class="clearfix"></div>
   </body>
 </html>
