@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Pitch shifter - HTML5 Video audio meddler",
+  "name": "Pitch shifter - HTML5 Video audio FX",
   "short_name": "Pitch shifter",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Pitch shift the audio in HTML5 videos on any webpage, e.g., YouTube",
   "author": "Foxdog Studios",
   "icons": {
