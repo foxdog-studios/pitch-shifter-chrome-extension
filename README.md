@@ -5,4 +5,6 @@ A chrome extension that shifts the pitch of HTML5 videos, get it
 
 Uses the "Jungle" delay pitch-shift from [Chris Wilso's Audio Input Effects](https://github.com/cwilso/Audio-Input-Effects).
 
+Also some of the additional quasi-semi-tone stuff from [mmckegg's soundbank-pitch-shift](https://github.com/mmckegg/soundbank-pitch-shift)
+
 

@@ -31,6 +31,18 @@ h1 {
   color: #aaa;
 }
 
+.control .mode-select,
+.control select {
+  font-size: 10px;
+  background-color: #222;
+  color: white;
+  float: right;
+}
+
+.control select {
+  margin-top: -2px;
+}
+
 .left {
   float: left;
 }

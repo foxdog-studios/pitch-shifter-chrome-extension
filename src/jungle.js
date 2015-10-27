@@ -176,20 +176,56 @@ Jungle.prototype.setDelay = function(delayTime) {
 
 var previousPitch = -1;
 
-Jungle.prototype.setPitchOffset = function(mult) {
-        if (mult>0) { // pitch up
-            this.mod1Gain.gain.value = 0;
-            this.mod2Gain.gain.value = 0;
-            this.mod3Gain.gain.value = 1;
-            this.mod4Gain.gain.value = 1;
-        } else { // pitch down
-            this.mod1Gain.gain.value = 1;
-            this.mod2Gain.gain.value = 1;
-            this.mod3Gain.gain.value = 0;
-            this.mod4Gain.gain.value = 0;
-        }
-        this.setDelay(delayTime*Math.abs(mult));
+Jungle.prototype.setPitchOffset = function(mult, transpose) {
+    if (transpose) {
+      mult = this.transpose(mult);
+    }
+    if (mult>0) { // pitch up
+        this.mod1Gain.gain.value = 0;
+        this.mod2Gain.gain.value = 0;
+        this.mod3Gain.gain.value = 1;
+        this.mod4Gain.gain.value = 1;
+    } else { // pitch down
+        this.mod1Gain.gain.value = 1;
+        this.mod2Gain.gain.value = 1;
+        this.mod3Gain.gain.value = 0;
+        this.mod4Gain.gain.value = 0;
+    }
+    this.setDelay(delayTime*Math.abs(mult));
     this.previousPitch = mult;
     previousPitch = mult;
+}
+
+
+// Strange stuff taken from:
+// https://github.com/mmckegg/soundbank-pitch-shift/blob/master/index.js
+//
+// Looks like the author did some regression to guess the pitch function.
+//
+// Anyway, it sounds okay for an experiment.
+//
+Jungle.prototype.transpose = function (x){
+
+  if (x<0){
+    return x/12
+  } else if (x == 0) {
+    return 0;
+  } else {
+    var a5 = 1.8149080040913423e-7
+    var a4 = -0.000019413043101157434
+    var a3 = 0.0009795096626987743
+    var a2 = -0.014147877819596033
+    var a1 = 0.23005591195033048
+    var a0 = 0.02278153473118749
+
+    var x1 = x
+    var x2 = x*x
+    var x3 = x*x*x
+    var x4 = x*x*x*x
+    var x5 = x*x*x*x*x
+
+    return a0 + x1*a1 + x2*a2 + x3*a3 + x4*a4 + x5*a5
+  }
+
 }
 

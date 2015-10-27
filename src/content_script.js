@@ -6,6 +6,8 @@ var videoConnected = false;
 var _previousPlaybackRate = 1;
 var _previousPitch = 0;
 
+var transpose = false;
+
 function getAudioContext() {
   if (!_audioCtx) {
     _audioCtx = new AudioContext();
@@ -40,7 +42,7 @@ function connectVideo(video) {
   outputNode.connect(jungle.input);
   jungle.output.connect(audioCtx.destination);
 
-  jungle.setPitchOffset(_previousPitch);
+  jungle.setPitchOffset(_previousPitch, transpose);
   video.playbackRate = _previousPlaybackRate;
 }
 
@@ -76,6 +78,13 @@ function initVideoObservers() {
           }
         }
       }
+      if (videoEl) {
+        // XXX: Don't do this on every mutation.
+        //
+        //      We set the playbackRate as otherwise it is forgotten when
+        //      a video changes in youtube.
+        videoEl.playbackRate = _previousPlaybackRate;
+      }
     });
   });
 
@@ -102,11 +111,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     response.playbackRate = _previousPlaybackRate;
     response.pitch = _previousPitch;
     response.enabled = videoConnected;
+    response.transpose = transpose;
     sendResponse(response);
   }
 
   if (request.enabled !== undefined && request.enabled !== null) {
-    if (request.enabled && !videoConnected) {
+    if (request.enabled) {
       initVideoObservers();
     } else if (!request.enabled && videoConnected) {
       if (_observer !== undefined && _observer !== null) {
@@ -122,10 +132,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     return;
   }
 
+  if (request.transpose !== undefined && request.transpose !== null) {
+    transpose = request.transpose;
+  }
+
   if (request.pitch !== undefined && request.pitch !== null) {
     _previousPitch = request.pitch;
-    getJungle().setPitchOffset(request.pitch);
+    getJungle().setPitchOffset(request.pitch, transpose);
   }
+
   if (request.playbackRate !== undefined && request.playbackRate !== null) {
     if (videoEl !== undefined && videoEl !== null) {
       _previousPlaybackRate = request.playbackRate;
