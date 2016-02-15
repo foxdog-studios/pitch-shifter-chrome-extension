@@ -22,7 +22,6 @@ function init() {
 
   function setPitchValue(_pitchValue) {
     pitch.value = _pitchValue;
-    console.log(pitch.value, _pitchValue);
     pitchValue.textContent = _pitchValue;
   }
 
@@ -40,9 +39,8 @@ function init() {
   }
 
   function setPitchShiftTypeSemiTone() {
-    console.log('setting max min');
-    pitch.max = 12;
-    pitch.min = -12;
+    pitch.max = 24;
+    pitch.min = -24;
     pitch.step = 1;
     pitchShiftTypeSelect.selectedIndex = 1;
     transpose = true;

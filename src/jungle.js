@@ -178,7 +178,8 @@ var previousPitch = -1;
 
 Jungle.prototype.setPitchOffset = function(mult, transpose) {
     if (transpose) {
-      mult = this.transpose(mult);
+      // Divide by 2 for semitones
+      mult = this.transpose(mult / 2);
     }
     if (mult>0) { // pitch up
         this.mod1Gain.gain.value = 0;
