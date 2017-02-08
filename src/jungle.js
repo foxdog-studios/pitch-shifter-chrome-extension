@@ -41,7 +41,6 @@ function createDelayTimeBuffer(context, activeTime, fadeTime, shiftUp) {
     var buffer = context.createBuffer(1, length, context.sampleRate);
     var p = buffer.getChannelData(0);
 
-
     // 1st part of cycle
     for (var i = 0; i < length1; ++i) {
         if (shiftUp)
@@ -107,8 +106,8 @@ function Jungle(context) {
     var modGain1 = context.createGain();
     var modGain2 = context.createGain();
 
-    var delay1 = context.createDelay();
-    var delay2 = context.createDelay();
+    var delay1 = context.createDelay(5);
+    var delay2 = context.createDelay(5);
     mod1Gain.connect(modGain1);
     mod2Gain.connect(modGain2);
     mod3Gain.connect(modGain1);
@@ -170,8 +169,8 @@ function Jungle(context) {
 }
 
 Jungle.prototype.setDelay = function(delayTime) {
-    this.modGain1.gain.setTargetAtTime(0.5*delayTime, 0, 0.010);
-    this.modGain2.gain.setTargetAtTime(0.5*delayTime, 0, 0.010);
+    this.modGain1.gain.setTargetAtTime(0.5*delayTime, this.context.currentTime, 0.010);
+    this.modGain2.gain.setTargetAtTime(0.5*delayTime, this.context.currentTime, 0.010);
 }
 
 var previousPitch = -1;
