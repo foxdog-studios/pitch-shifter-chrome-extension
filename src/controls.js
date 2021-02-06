@@ -47,6 +47,10 @@ function init() {
   }
 
   sendMessageToActiveTab({type: 'get'}, function (values) {
+    if (values === undefined) {
+      return;
+    }
+
     if (values.transpose !== undefined && values.transpose !== null) {
       if (values.transpose) {
         setPitchShiftTypeSemiTone();

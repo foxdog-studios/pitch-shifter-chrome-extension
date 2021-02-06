@@ -1,12 +1,11 @@
 var _audioCtx = null;
 var _jungle = null;
-var _outputNode = null;
-
-var videoConnected = false;
 var _previousPlaybackRate = 1;
 var _previousPitch = 0;
 
 var transpose = false;
+
+let videoConnected = false;
 
 function getAudioContext() {
   if (!_audioCtx) {
@@ -17,95 +16,163 @@ function getAudioContext() {
 
 function getJungle() {
   if (!_jungle) {
-    _jungle = new Jungle(getAudioContext());
+    const audioCtx = getAudioContext();
+    _jungle = new Jungle(audioCtx);
+    _jungle.output.connect(audioCtx.destination);
   }
   return _jungle;
 }
 
+const outputNodeMap = new Map();
+
 function getOutputNode(video) {
-  if (!_outputNode) {
-    audioCtx = getAudioContext();
-    _outputNode = audioCtx.createMediaElementSource(video);
+  let outputNode = outputNodeMap.get(video);
+
+  if (outputNode === undefined) {
+    const audioCtx = getAudioContext();
+    outputNode = {
+      outputNode: audioCtx.createMediaElementSource(video),
+      destinationConnected: false,
+      pitchShifterConnected: false,
+    };
+    outputNodeMap.set(video, outputNode);
   }
-  return _outputNode;
+
+  return outputNode;
 }
 
 function connectVideo(video) {
+  const nodeData = getOutputNode(video);
 
-  var audioCtx = getAudioContext();
-  if (_outputNode !== undefined && _outputNode !== null) {
-    _outputNode.disconnect(audioCtx.destination);
-  }
-  var outputNode = getOutputNode(video);
+  const outputNode = nodeData.outputNode;
+
   var jungle = getJungle();
+  if (!nodeData.pitchShifterConnected) {
+    outputNode.connect(jungle.input);
+    nodeData.pitchShifterConnected = true;
+  }
 
-  outputNode.connect(jungle.input);
-  jungle.output.connect(audioCtx.destination);
+  if (nodeData.destinationConnected) {
+    const audioCtx = getAudioContext();
+    outputNode.disconnect(audioCtx.destination);
+    nodeData.destinationConnected = false;
+  }
 
   jungle.setPitchOffset(_previousPitch, transpose);
   video.playbackRate = _previousPlaybackRate;
+  videoConnected = true;
 }
 
 function disconnectVideo(video) {
-  var audioCtx = getAudioContext();
-  var outputNode = getOutputNode(video);
+  const audioCtx = getAudioContext();
+  
   var jungle = getJungle();
 
-  outputNode.disconnect(jungle.input);
-  jungle.output.disconnect(audioCtx.destination);
-  outputNode.connect(audioCtx.destination);
+  const nodeData = getOutputNode(video);
+
+  const outputNode = nodeData.outputNode;
+
+  if (nodeData.pitchShifterConnected) {
+    outputNode.disconnect(jungle.input);
+    nodeData.pitchShifterConnected = false;
+  }
+
+  if (!nodeData.destinationConnected) {
+    outputNode.connect(audioCtx.destination);
+    nodeData.destinationConnected = true;
+  }
+
   video.playbackRate = 1;
 }
 
+
+const videoListeners = new Map();
+
+function disconnectAllVideos() {
+  outputNodeMap.forEach((_nodeData, video) => {
+    disconnectVideo(video);
+  });
+
+  videoListeners.forEach((listener, video) => {
+    video.removeEventListener('playing', listener);
+  });
+  videoConnected = false;
+}
+
 _observer = null;
-videoEl = null;
+
+/**
+ * @param {HTMLVideoElement} newVideoEl
+ */
+const changeVideo = (newVideoEl) => {
+  connectVideo(newVideoEl)
+}
+
+
+/**
+ * @param {HTMLVideoElement} video
+ */
+const isVideoPlaying = video => !!(video.currentTime > 0 && !video.paused && !video.ended && video.readyState > 2);
+
+
+/**
+ * @param {HTMLVideoElement} listenVideoEl
+ */
+
+const listenForPlay = (listenVideoEl) => {
+  const listener = videoListeners.get(listenVideoEl);
+  if (listener === undefined) {
+    const listenerCallback = () => {
+      changeVideo(listenVideoEl);
+    };
+    listenVideoEl.addEventListener('playing', listenerCallback);
+    videoListeners.set(listenVideoEl, listenerCallback);
+  }
+
+  if (isVideoPlaying(listenVideoEl)) {
+    changeVideo(listenVideoEl);
+  }
+}
 
 function initVideoObservers() {
   _observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
       if (mutation.addedNodes !== undefined && mutation.addedNodes !== null) {
         for (var i = 0; i < mutation.addedNodes.length; ++i) {
-          var node = mutation.addedNodes[i];
+          var newVideoEl = mutation.addedNodes[i];
           // Dom has changed so try and get the video element again.
-          newVideoEl = document.querySelector('video');
-          if (videoEl !== newVideoEl) {
-            if (videoConnected) {
-              disconnectVideo(videoEl);
+          if (!(newVideoEl instanceof HTMLVideoElement)) {
+            if (newVideoEl.querySelectorAll !== undefined) {
+              newVideoEl.querySelectorAll('video').forEach((v) => {
+                listenForPlay(v);
+              });
             }
-            videoConnected = true;
-            videoEl = newVideoEl;
-            connectVideo(newVideoEl)
+            return;
           }
+          listenForPlay(newVideoEl);
         }
-      }
-      if (videoEl) {
-        // XXX: Don't do this on every mutation.
-        //
-        //      We set the playbackRate as otherwise it is forgotten when
-        //      a video changes in youtube.
-        videoEl.playbackRate = _previousPlaybackRate;
       }
     });
   });
 
   var observerConfig = {
-    attributes: true,
     childList: true,
-    characterData: true
+    subtree: true,
   };
 
   var targetNode = document.body;
   _observer.observe(targetNode, observerConfig);
 
   // Try get the video element.
-  videoEl = document.querySelector('video');
-  if (videoEl) {
-    videoConnected = true;
-    connectVideo(videoEl);
-  }
+  videoEls = document.querySelectorAll('video');
+  videoEls.forEach((v) => {
+    if (v instanceof HTMLVideoElement) {
+      listenForPlay(v);
+    }
+  });
 }
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(request, _sender, sendResponse) {
   if (request.type === 'get') {
     response = {};
     response.playbackRate = _previousPlaybackRate;
@@ -123,13 +190,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         _observer.disconnect();
         _observer = null;
       }
-      videoConnected = false;
-      disconnectVideo(videoEl);
+      disconnectAllVideos();
     }
-  }
-
-  if (!videoEl) {
-    return;
   }
 
   if (request.transpose !== undefined && request.transpose !== null) {
@@ -142,12 +204,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
 
   if (request.playbackRate !== undefined && request.playbackRate !== null) {
-    if (videoEl !== undefined && videoEl !== null) {
-      _previousPlaybackRate = request.playbackRate;
-      videoEl.playbackRate = request.playbackRate;
-    }
+    _previousPlaybackRate = request.playbackRate;
+    outputNodeMap.forEach((_nodeData, video) => {
+      video.playbackRate = request.playbackRate;
+    });
   }
-
-
 });
 
